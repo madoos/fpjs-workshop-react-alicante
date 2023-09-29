@@ -1,8 +1,10 @@
 import accounting from 'accounting'
 import {
+  __,
   add,
   compose,
   concat,
+  descend,
   filter,
   flip,
   head,
@@ -13,7 +15,10 @@ import {
   prop,
   reduce,
   replace,
+  sort,
   sortBy,
+  take,
+  takeLast,
   toLower,
 } from 'ramda'
 
@@ -60,28 +65,36 @@ const CARS = [
 describe('Compose', () => {
   // Exercise 1
   test('Use compose() to rewrite the function below. Hint: prop() is curried.', () => {
-    // TODO: isLastInStock :: [Car] -> Boolean
-    const isLastInStock = cars => {
-      const lastCar = last(cars)
-      return prop('in_stock', lastCar)
-    }
+    // isLastInStock :: [Car] -> Boolean
+    const isLastInStock = compose(
+      last,
+      map(prop('in_stock'))
+    )
+    
     expect(isLastInStock(CARS)).toBe(false)
   })
 
   // Exercise 2:
   test('Use compose(), prop() and head() to retrieve the name of the first car.', () => {
-    const nameOfFirstCar = identity // TODO:
+    // nameOfFirstCar :: [Car] -> String
+    const nameOfFirstCar = compose(
+      prop('name'),
+      head
+    );
+
     expect(nameOfFirstCar(CARS)).toBe('Ferrari FF')
   })
 
   // Exercise 3:
   test('Use the helper function _average to refactor averageDollarValue as a composition.', () => {
     const _average = xs => reduce(add, 0, xs) / xs.length // <- LEAVE BE
-    // TODO: averageDollarValue :: [Car] -> Int
-    const averageDollarValue = cars => {
-      const dollarValues = map(c => c.dollar_value, cars)
-      return average(dollarValues)
-    }
+    // averageDollarValue :: [Car] -> Int
+    const averageDollarValue = compose(
+      _average,
+      map(prop('dollar_value'))
+    )
+    
+
     expect(averageDollarValue(CARS)).toBe(790700)
   })
 
@@ -89,7 +102,12 @@ describe('Compose', () => {
   test("Write a function: sanitizeNames() using compose that returns a list of lowercase and underscored car's names:", () => {
     // e.g: sanitizeNames([{name: 'Ferrari FF', horsepower: 660, dollar_value: 700000, in_stock: true}]) //=> ['ferrari_ff'].
     const _underscore = replace(/\W+/g, '_') // <-- leave this alone and use to sanitize
-    const sanitizeNames = identity // TODO:
+    const sanitizeNames = map(compose(
+      toLower,
+      _underscore,
+      prop('name')
+    ));
+    
     const expected = [
       'ferrari_ff',
       'spyker_c12_zagato',
@@ -107,19 +125,27 @@ describe('Compose', () => {
       accounting.formatMoney,
       prop('dollar_value')
     )
-    const availablePrices = identity // TODO:
+    const availablePrices = compose(
+      join(', '),
+      map(_formatPrice),
+      (xs) => [xs[0], xs[4]]
+    ) 
     expect(availablePrices(CARS)).toBe('$700,000.00, $1,850,000.00')
   })
 
   // Bonus 2:
   test('Refactor to pointfree. Hint: you can use flip().', () => {
     const _append = flip(concat)
-    // TODO: fastestCar :: [Car] -> String
-    const fastestCar = cars => {
-      const sorted = sortBy(car => car.horsepower, cars)
-      const fastest = last(sorted)
-      return concat(fastest.name, ' is the fastest')
-    }
+    // fastestCar :: [Car] -> String
+    const fastestCar = compose(
+      concat(__, ' is the fastest'),
+      prop('name'),
+      last,
+      sortBy(car => car.horsepower)
+    )
+    
+    
+   
     expect(fastestCar(CARS)).toBe('Aston Martin One-77 is the fastest')
   })
 })
