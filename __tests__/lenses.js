@@ -1,37 +1,38 @@
-import { compose, lensPath, over, inc, dec, not } from 'ramda'
+import { compose, lensPath, over, inc, dec, not, applyTo } from 'ramda'
 
 const LIKED = 'LIKED'
 const DISLIKED = 'DISLIKED'
+
 const initialState = [
   { postId: 1, likes: { count: 10 }, user_has_liked: false },
   { postId: 2, likes: { count: 42 }, user_has_liked: false },
   { postId: 3, likes: { count: 5 }, user_has_liked: true },
 ]
 
+const likesCountLens = index => lensPath([index, 'likes', 'count']);
+const likeLens = index => lensPath([index, 'user_has_liked'])
+
+
 const reducer = (state = initialState, { type, index }) => {
   switch (type) {
     case LIKED:
-      // TODO: refactor this with lenses!
-      return [
-        ...state.slice(0, index),
-        {
-          ...state[index],
-          likes: { count: state[index].likes.count + 1 },
-          user_has_liked: true,
-        },
-        ...state.slice(index + 1),
-      ]
+
+    return applyTo(
+      state,
+      compose(
+        over(likesCountLens(index), inc),
+        over(likeLens(index), not),
+      )
+    );
+
     case DISLIKED:
-      // TODO: refactor this with lenses!
-      return [
-        ...state.slice(0, index),
-        {
-          ...state[index],
-          likes: { count: state[index].likes.count - 1 },
-          user_has_liked: false,
-        },
-        ...state.slice(index + 1),
-      ]
+      return applyTo(
+        state,
+        compose(
+          over(likesCountLens(index), dec),
+          over(likeLens(index), not),
+        )
+      );
     default:
       state
   }
